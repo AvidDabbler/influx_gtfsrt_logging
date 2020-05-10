@@ -7,7 +7,7 @@ from urllib.request import urlopen
 import json
 import csv
 
-dir = os.getcwd()
+dir = os.path.join(os.getcwd(), 'gtfs')
 
 # don't need this due to
 def saveTempData(data, filename):
