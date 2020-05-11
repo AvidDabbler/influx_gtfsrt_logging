@@ -107,11 +107,10 @@ def loadGTFS(file):
     with open(file['path'], newline='') as csvfile:
         lineString = f"{file['path'].split(dir)[1].split('.txt')[0][1:]}"  # get the file name without '.csv' and assign to measurement
         reader = csv.DictReader(csvfile)
-        keys = ""
-        fields = ""
         for line in reader:
+            keys = ""
+            fields = ""
             for field in line:
-                # if '_id' in field | field == "parent_station":
                 if '_id' in field or field == "parent_station":
                     if 'ï»¿' in field:
                         f = field.split('ï»¿')[1]
@@ -121,10 +120,9 @@ def loadGTFS(file):
                 else:
                     fields = f'{field}:{line[field]},'
             file['load'].append(f'{lineString},{keys[:-1]} {fields[:-1]} ')
-            keys = ""
-            fields = ""
 
-def getRealTime():
+
+def getRealTime(gtfsrt):
     def parseDict(pbu):
         # TAKES THE DATA FROM U (THE PB URL) AND TURNS IT INTO A DICTIONARY
         feed = gtfs_realtime_pb2.FeedMessage()
@@ -134,12 +132,25 @@ def getRealTime():
         feed2 = MessageToDict(feed)
         return feed2
 
-    def getVehicles(pburl):
-        feed = parseDict(pburl)
-        id = 0
+    def getVehicles(pb):
+        feed = parseDict(pb['url'])
         for value in feed['entity']:
-           print(value)
-
+            keys = ''
+            fields = ''
+            timestamp = value['vehicle']['timestamp']
+            for data in value['vehicle']:
+                if type(value['vehicle'][data]) == dict:
+                    for d in value['vehicle'][data]:
+                        if 'id' in d.lower():
+                            keys += f'{d}:{value["vehicle"][data][d]},'
+                        else:
+                            if type(value["vehicle"][data][d]) == str:
+                                fields += f'{d}:"{value["vehicle"][data][d]}",'
+                            else:
+                                fields += f'{d}:{value["vehicle"][data][d]},'
+            line = f"vehicles,{keys[:-1]} {fields[:-1]}"
+            print(line)
+            pb['load'].append(line)
 
     def getTrips(pburl):
         allTrips = {}
@@ -147,40 +158,44 @@ def getRealTime():
         for value in feed['entity']:
             print(value)
 
+
     realtime_list = [
         'https://www.metrostlouis.org/RealTimeData/StlRealTimeVehicles.pb',
         'https://www.metrostlouis.org/RealTimeData/StlRealTimeTrips.pb'
     ]
 
-    for item in realtime_list:
-        # if looking at vehicles
-        if item == 'https://www.metrostlouis.org/RealTimeData/StlRealTimeVehicles.pb':
-            print('writing vehicles...')
-            vehicles = getVehicles(item)
-            saveTempData(vehicles, r'leaflet\vehicles.json')
-            pass
+    getVehicles(gtfsrt['vehicles'])
+    print(gtfsrt['vehicles']['load'])
+
+    # for item in realtime_list:
+    #     # if looking at vehicles
+    #     if item == 'https://www.metrostlouis.org/RealTimeData/StlRealTimeVehicles.pb':
+    #         print('writing vehicles...')
+    #         vehicles = getVehicles(item)
+    #         saveTempData(vehicles, r'leaflet\vehicles.json')
+    #         pass
         # if looking at the trips file
-        elif item == 'https://www.metrostlouis.org/RealTimeData/StlRealTimeTrips.pb':
-            print('writing trips...')
-            print(item)
-            trips = getTrips(item)
-            saveTempData(trips, r'leaflet\trips.json')
-            pass
-        else:
-            print(item)
-            print('error')
-            return
+        # elif item == 'https://www.metrostlouis.org/RealTimeData/StlRealTimeTrips.pb':
+        #     print('writing trips...')
+        #     print(item)
+        #     trips = getTrips(item)
+        #     saveTempData(trips, r'leaflet\trips.json')
+        #     pass
+        # else:
+        #     print(item)
+        #     print('error')
+        #     return
 
 # getGTFS()
 
-for file in gtfs:
-    loadGTFS(file)
+# for file in gtfs:
+#     loadGTFS(file)
 
 # for file in gtfs:
 #     print(file['path'])
 #     print(file['load'])
 
-# getRealTime()
+getRealTime(gtfsrt)
 #
 #
 # while 1==1:
